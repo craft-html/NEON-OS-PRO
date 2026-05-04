@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Neon OS - Cinematic Edition</title>
+    <style>
+        :root {
+            --neon-blue: #00f2ff;
+            --neon-purple: #bc13fe;
+            --u-orange: #E95420;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; cursor: default; }
+        body, html { width: 100%; height: 100%; overflow: hidden; font-family: 'Segoe UI', sans-serif; background: #000; }
+
+        /* --- LOGIN SCREEN --- */
+        #login-screen {
+            position: fixed; inset: 0; z-index: 100000;
+            background: radial-gradient(circle at center, #1a0033 0%, #000 100%);
+            display: flex; flex-direction: column; justify-content: center; align-items: center; color: white;
+        }
+        .user-pill {
+            background: rgba(255,255,255,0.1); padding: 20px 40px; border-radius: 50px;
+            backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2);
+            display: flex; flex-direction: column; align-items: center; gap: 15px;
+        }
+
+        /* --- HIGH-END STARTUP ANIMATION --- */
+        #startup-sequence {
+            position: fixed; inset: 0; z-index: 99999; display: none; background: #000;
+        }
+        .intro-scene {
+            position: absolute; inset: 0; display: none; justify-content: center; align-items: center;
+            background-size: cover; background-position: center;
+            animation: panBG 12s linear infinite;
+        }
+        .intro-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.4); }
+        .intro-text {
+            font-size: 80px; font-weight: 900; font-style: italic; color: white;
+            text-transform: uppercase; z-index: 2; opacity: 0;
+            text-shadow: 5px 5px 0px var(--neon-purple), 10px 10px 0px var(--neon-blue);
+            animation: textFocus 4s ease-in-out forwards;
+        }
+
+        @keyframes textFocus {
+            0% { opacity: 0; filter: blur(20px); transform: scale(0.8) translateY(20px); }
+            30% { opacity: 1; filter: blur(0); transform: scale(1) translateY(0); }
+            80% { opacity: 1; filter: blur(0); transform: scale(1.05); }
+            100% { opacity: 0; filter: blur(10px); transform: scale(1.1); }
+        }
+        @keyframes panBG { from { background-scale: 1.1; background-position: 0% 50%; } to { background-position: 100% 50%; } }
+
+        /* --- DESKTOP --- */
+        #desktop { width: 100vw; height: 100vh; background: url('https://images.unsplash.com/photo-1614850523296-d8c1af93d400?q=80&w=2070') center/cover; display: none; position: relative; }
+        
+        /* 6-ITEM DOCK */
+        .dock {
+            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+            height: 70px; background: rgba(0,0,0,0.8); backdrop-filter: blur(20px);
+            border-radius: 20px; display: flex; align-items: center; padding: 0 20px; gap: 15px;
+            border: 1px solid var(--neon-blue); box-shadow: 0 0 30px rgba(0,242,255,0.2);
+        }
+        .dock-item { width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; font-size: 28px; transition: 0.3s; cursor: pointer !important; }
+        .dock-item:hover { transform: translateY(-15px) scale(1.2); }
+
+        /* WINDOWS */
+        .window { position: absolute; width: 700px; height: 500px; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 25px 60px rgba(0,0,0,0.5); display: flex; flex-direction: column; }
+        .win-head { background: #222; color: white; height: 40px; display: flex; justify-content: space-between; align-items: center; padding: 0 15px; }
+        .close-btn { background: #ff5f56; width: 15px; height: 15px; border-radius: 50%; border: none; cursor: pointer !important; }
+        
+        /* APPS */
+        .editor { width: 100%; height: 100%; padding: 20px; border: none; outline: none; font-size: 16px; resize: none; font-family: 'Segoe UI'; }
+        .save-banner { background: #f0f0f0; padding: 10px; border-bottom: 1px solid #ddd; display: flex; gap: 10px; }
+        #canvas { width: 100%; height: 100%; background: white; cursor: crosshair !important; }
+    </style>
+</head>
+<body>
+
+    <!-- LOGIN -->
+    <div id="login-screen">
+        <div class="user-pill">
+            <div style="font-size: 50px;">👤</div>
+            <h2 id="user-display">Guest User</h2>
+            <button onclick="BeginSequence()" style="background: var(--neon-blue); border: none; padding: 10px 30px; border-radius: 20px; font-weight: bold; cursor: pointer !important;">Login</button>
+        </div>
+    </div>
+
+    <!-- HIGH-END STARTUP (12s) -->
+    <div id="startup-sequence">
+        <div class="intro-scene" id="s1" style="background-image: url('https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=2070')">
+            <div class="intro-overlay"></div><div class="intro-text">NEON SYSTEM</div>
+        </div>
+        <div class="intro-scene" id="s2" style="background-image: url('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2070')">
+            <div class="intro-overlay"></div><div class="intro-text">LOADING CORES</div>
+        </div>
+        <div class="intro-scene" id="s3" style="background-image: url('https://images.unsplash.com/photo-1614850523296-d8c1af93d400?q=80&w=2070')">
+            <div class="intro-overlay"></div><div class="intro-text">WELCOME</div>
+        </div>
+    </div>
+
+    <!-- DESKTOP -->
+    <div id="desktop">
+        <div id="wm-stage"></div>
+        <aside class="dock">
+            <div class="dock-item" onclick="App.open('files')" title="Explorer">📂</div>
+            <div class="dock-item" onclick="App.open('wordpad')" title="WordPad">📝</div>
+            <div class="dock-item" onclick="App.open('notepad')" title="Notepad">🗒️</div>
+            <div class="dock-item" onclick="App.open('paint')" title="Paint">🎨</div>
+            <div class="dock-item" onclick="App.open('terminal')" title="Terminal">🐚</div>
+            <div class="dock-item" onclick="App.open('calc')" title="Calculator">🔢</div>
+        </aside>
+    </div>
+
+    <script>
+        // --- PERSISTENT DATA ---
+        const State = {
+            z: 1000,
+            openApps: new Set(),
+            notes: JSON.parse(localStorage.getItem('neon_data')) || { wordpad: "", notepad: "" }
+        };
+
+        // --- ANIMATION SEQUENCE ---
+        function BeginSequence() {
+            document.getElementById('login-screen').style.display = 'none';
+            const seq = document.getElementById('startup-sequence');
+            seq.style.display = 'block';
+
+            const scenes = ['s1', 's2', 's3'];
+            scenes.forEach((id, idx) => {
+                setTimeout(() => {
+                    document.querySelectorAll('.intro-scene').forEach(s => s.style.display = 'none');
+                    document.getElementById(id).style.display = 'flex';
+                }, idx * 4000);
+            });
+
+            setTimeout(() => {
+                seq.style.opacity = '0';
+                setTimeout(() => {
+                    seq.style.display = 'none';
+                    document.getElementById('desktop').style.display = 'block';
+                }, 1000);
+            }, 12000);
+        }
+
+        // --- APP ENGINE ---
+        const App = {
+            open(id) {
+                if(State.openApps.has(id)) { this.focus(id); return; }
+                State.openApps.add(id);
+                const win = document.createElement('div');
+                win.className = 'window'; win.id = `win-${id}`;
+                win.style.zIndex = ++State.z; win.style.left = '20%'; win.style.top = '15%';
+                win.innerHTML = `
+                    <div class="win-head" onmousedown="App.drag(event, '${id}')">
+                        <button class="close-btn" onclick="App.close('${id}')"></button>
+                        <span>${id.toUpperCase()}</span>
+                        <div style="width:15px"></div>
+                    </div>
+                    <div class="win-body" style="flex:1; overflow:auto;">${this.getUI(id)}</div>`;
+                document.getElementById('wm-stage').appendChild(win);
+                if(id === 'paint') initPaint();
+            },
+
+            getUI(id) {
+                if(id === 'wordpad' || id === 'notepad') return `
+                    <div class="save-banner"><button onclick="SaveFile('${id}')" style="cursor:pointer !important;">💾 SAVE FILE</button></div>
+                    <textarea id="text-${id}" class="editor">${State.notes[id]}</textarea>`;
+                
+                if(id === 'paint') return `<canvas id="canvas"></canvas>`;
+                
+                if(id === 'calc') return `<div id="d" style="background:#000;color:#0f0;padding:20px;text-align:right;font-size:30px">0</div><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:2px;padding:10px;">${[7,8,9,'/',4,5,6,'*',1,2,3,'-',0,'C','=','+'].map(k=>`<button onclick="Calc('${k}')" style="padding:20px;cursor:pointer !important;">${k}</button>`).join('')}</div>`;
+
+                if(id === 'terminal') return `<div id="t-out" style="background:#000;color:#0f0;height:300px;padding:10px;font-family:monospace;overflow-y:auto">NeonOS Console v1.5<br>Type 'ls' or 'help'<br></div><div style="background:#000;padding:10px;"><input onkeydown="Cmd(event, this)" style="background:none;border:none;color:#0f0;width:90%;outline:none"></div>`;
+
+                if(id === 'files') return `<div style="padding:20px;"><h3>📂 System Drive</h3><ul style="margin-top:20px;list-style:none;"><li>📁 Documents</li><li>📁 Projects</li><li>📄 boot.sys</li><li>📄 config.neon</li></ul></div>`;
+
+                return `App Content`;
+            },
+
+            close(id) { document.getElementById(`win-${id}`).remove(); State.openApps.delete(id); },
+            focus(id) { document.getElementById(`win-${id}`).style.zIndex = ++State.z; },
+            drag(e, id) {
+                if(e.target.tagName === 'BUTTON') return;
+                const el = document.getElementById(`win-${id}`); this.focus(id);
+                let x = e.clientX - el.offsetLeft, y = e.clientY - el.offsetTop;
+                const move = (ev) => { el.style.left = (ev.clientX-x)+'px'; el.style.top = (ev.clientY-y)+'px'; };
+                document.addEventListener('mousemove', move);
+                document.addEventListener('mouseup', () => document.removeEventListener('mousemove', move), {once:true});
+            }
+        };
+
+        // --- FUNCTIONALITY ---
+        function SaveFile(id) {
+            State.notes[id] = document.getElementById(`text-${id}`).value;
+            localStorage.setItem('neon_data', JSON.stringify(State.notes));
+            alert("Success: Changes saved to internal code storage.");
+        }
+
+        function Calc(k) {
+            const d = document.getElementById('d');
+            if(k === 'C') d.innerText = "0";
+            else if(k === '=') d.innerText = eval(d.innerText);
+            else d.innerText = (d.innerText === "0" ? "" : d.innerText) + k;
+        }
+
+        function Cmd(e, input) {
+            if(e.key === 'Enter') {
+                const out = document.getElementById('t-out');
+                const v = input.value.toLowerCase();
+                out.innerHTML += `> ${v}<br>`;
+                if(v === 'ls') out.innerHTML += "home  root  sys  usr<br>";
+                else if(v === 'help') out.innerHTML += "Available: ls, clear, help, date<br>";
+                else if(v === 'clear') out.innerHTML = "";
+                input.value = "";
+            }
+        }
+
+        function initPaint() {
+            const c = document.getElementById('canvas'); const ctx = c.getContext('2d');
+            c.width = 700; c.height = 460;
+            let draw = false;
+            c.onmousedown = () => draw = true;
+            c.onmouseup = () => { draw = false; ctx.beginPath(); };
+            c.onmousemove = (e) => {
+                if(!draw) return;
+                ctx.lineWidth = 4; ctx.lineCap = "round"; ctx.strokeStyle = "purple";
+                ctx.lineTo(e.offsetX, e.offsetY); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(e.offsetX, e.offsetY);
+            };
+        }
+    </script>
+</body>
+</html>
